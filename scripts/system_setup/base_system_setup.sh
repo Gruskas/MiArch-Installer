@@ -159,21 +159,18 @@ default_time() {
 setup_bootloader() {
   title 'Base System Setup > Boot Loader'
 
+  if [ "$LUKS" = "$TRUE" ]; then
+    packages+=" lvm2 cryptsetup"
+  fi
+
   if [ $GRUB = $TRUE ]; then
     wprintf '[+] Setting up GRUB boot loader'
     printf "\n\n"
 
-    packages="grub"
+    packages+=" grub"
 
-    if [ "$DUALBOOT" = "$TRUE" ]; then
-      packages+=" os-prober"
-    fi
-    if [ "$BOOT_MODE" = 'uefi' ]; then
-      packages+=" efibootmgr"
-    fi
-    if [ "$LUKS" = "$TRUE" ]; then
-      packages+=" lvm2 cryptsetup"
-    fi
+    [ "$DUALBOOT" = "$TRUE" ] && packages+=" os-prober"
+    [ "$BOOT_MODE" = 'uefi' ] && packages+=" efibootmgr"
 
     pacstrap $CHROOT $packages >$VERBOSE 2>&1
 
@@ -197,12 +194,24 @@ setup_bootloader() {
     chroot $CHROOT bootctl install >$VERBOSE 2>&1
     uuid="$(blkid "$ROOT_PART" | cut -d ' ' -f 2 | cut -d '"' -f 2)"
 
-    cat >>"$CHROOT/boot/loader/entries/arch.conf" <<EOF
+    if [ "$LUKS" = "$TRUE" ]; then
+      pacstrap $CHROOT $packages >$VERBOSE 2>&1
+      uuid_crypt=$(blkid -o value -s UUID "$ROOT_PART")
+
+      cat >>"$CHROOT/boot/loader/entries/arch.conf" <<EOF
+title   MiArch Linux
+linux   /vmlinuz-linux
+initrd  /initramfs-linux.img
+options cryptdevice=UUID=$uuid_crypt:cryptroot root=/dev/mapper/cryptroot rw
+EOF
+    else
+      cat >>"$CHROOT/boot/loader/entries/arch.conf" <<EOF
 title   MiArch Linux
 linux   /vmlinuz-linux
 initrd    /initramfs-linux.img
 options   root=UUID=$uuid rw
 EOF
+    fi
   fi
 
   warn 'This can take a while, please wait...'

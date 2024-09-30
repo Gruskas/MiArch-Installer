@@ -36,9 +36,6 @@ ask_dualboot() {
       GRUB=$TRUE
     fi
   fi
-
-  sleep_clear 0
-  ask_luks
 }
 
 ask_grub() {

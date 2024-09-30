@@ -3,7 +3,7 @@
 BASE_DIR="/usr/share/miarch-installer/scripts"
 
 if [ -d "$(dirname "$0")" ] && [ -d "$(dirname "$0")/utilities" ]; then
-    BASE_DIR="$(dirname "$0")"
+  BASE_DIR="$(dirname "$0")"
 fi
 
 source $BASE_DIR"/utilities/general.sh"
@@ -54,6 +54,8 @@ main() {
 
   # Disk
   ask_dualboot
+  sleep_clear 0
+  ask_luks
   sleep_clear 0
   umount_filesystems 'WindowsMyBeloved'
   sleep_clear 0

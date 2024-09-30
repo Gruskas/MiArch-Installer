@@ -21,15 +21,39 @@ make_root_partition() {
   wprintf '[+] Creating ROOT partition'
   printf "\n\n"
 
+    if [ "$LUKS" = "$TRUE" ]; then
+    wprintf '[+] Encrypting ROOT partition with LUKS'
+    printf "\n\n"
+    
+    if ! cryptsetup luksFormat "$ROOT_PART" >$VERBOSE 2>&1; then
+      error 'Could not encrypt the root partition'
+      exit $FAILURE
+    fi
+
+    if ! cryptsetup open "$ROOT_PART" cryptroot >$VERBOSE 2>&1; then
+      error 'Could not open encrypted root partition'
+      exit $FAILURE
+    fi
+
+    ROOT_PART_ENCRYPT='/dev/mapper/cryptroot'
+  fi
+
   if [ "$ROOT_FS_TYPE" = 'btrfs' ]; then
     mkfs_opts='-f'
   else
     mkfs_opts='-F'
   fi
 
-  if ! mkfs.$ROOT_FS_TYPE "$mkfs_opts" "$ROOT_PART" >$VERBOSE 2>&1; then
-    error 'Could not create filesystem'
-    exit $FAILURE
+if [ "$LUKS" = "$TRUE" ]; then
+    if ! mkfs.$ROOT_FS_TYPE "$mkfs_opts" "$ROOT_PART_ENCRYPT" >$VERBOSE 2>&1; then
+      error 'Could not create filesystem on encrypted partition'
+      exit $FAILURE
+    fi
+  else
+    if ! mkfs.$ROOT_FS_TYPE "$mkfs_opts" "$ROOT_PART" >$VERBOSE 2>&1; then
+      error 'Could not create filesystem on root partition'
+      exit $FAILURE
+    fi
   fi
 }
 

@@ -48,10 +48,10 @@ setup_base_system() {
   setup_time
   sleep_clear 1
 
-  # Set up boot lodaer
-  setup_bootloader
-  sleep_clear 1
-
   # Set up the initial ramdisk filesystem
   setup_initramfs
+  sleep_clear 1
+  
+  # Set up boot lodaer
+  setup_bootloader
 }

@@ -171,12 +171,24 @@ setup_bootloader() {
     if [ "$BOOT_MODE" = 'uefi' ]; then
       packages+=" efibootmgr"
     fi
+    if [ "$LUKS" = "$TRUE" ]; then
+      packages+=" lvm2 cryptsetup"
+    fi
 
     pacstrap $CHROOT $packages >$VERBOSE 2>&1
 
     sed -i 's/Arch/MiArch/g' "$CHROOT/etc/default/grub"
 
-    chroot $CHROOT grub-install "$Disk" >$VERBOSE 2>&1
+    if [ "$LUKS" = "$TRUE" ]; then
+      chroot $CHROOT grub-install --efi-directory=/boot "$Disk" >$VERBOSE 2>&1
+      uuid_crypt=$(blkid -o value -s UUID "$ROOT_PART")
+      uuid_root=$(blkid -o value -s UUID "$ROOT_PART_ENCRYPT")
+
+      sed -i "s/GRUB_CMDLINE_LINUX_DEFAULT=\"loglevel=3 quiet\"/GRUB_CMDLINE_LINUX_DEFAULT=\"loglevel=3 quiet cryptdevice=UUID=$uuid_crypt:cryptroot root=UUID=$uuid_root\"/g" "$CHROOT/etc/default/grub"
+    else
+      chroot $CHROOT grub-install "$Disk" >$VERBOSE 2>&1
+    fi
+
     chroot $CHROOT grub-mkconfig -o /boot/grub/grub.cfg >$VERBOSE 2>&1
   else
     wprintf '[+] Setting up boot loader'
@@ -192,6 +204,10 @@ initrd    /initramfs-linux.img
 options   root=UUID=$uuid rw
 EOF
   fi
+
+  warn 'This can take a while, please wait...'
+  printf "\n"
+  chroot $CHROOT mkinitcpio -P >$VERBOSE 2>&1
 }
 
 setup_initramfs() {
@@ -203,9 +219,9 @@ setup_initramfs() {
   cp -f "$Config_PATH/etc/mkinitcpio.conf" "$CHROOT/etc/mkinitcpio.conf"
   cp -fr "$Config_PATH/etc/mkinitcpio.d" "$CHROOT/etc/"
 
-  warn 'This can take a while, please wait...'
-  printf "\n"
-  chroot $CHROOT mkinitcpio -P linux >$VERBOSE 2>&1
+  if [ "$LUKS" = "$TRUE" ]; then
+    sed -i 's/^HOOKS=(.*)$/HOOKS=(base udev autodetect modconf block encrypt lvm2 filesystems keyboard fsck)/' "$CHROOT/etc/mkinitcpio.conf"
+  fi
 }
 
 copy_config() {

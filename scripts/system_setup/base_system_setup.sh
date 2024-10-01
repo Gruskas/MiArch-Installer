@@ -229,7 +229,7 @@ setup_initramfs() {
   cp -fr "$Config_PATH/etc/mkinitcpio.d" "$CHROOT/etc/"
 
   if [ "$LUKS" = "$TRUE" ]; then
-    sed -i 's/^HOOKS=(.*)$/HOOKS=(base udev autodetect modconf block encrypt lvm2 filesystems keyboard fsck)/' "$CHROOT/etc/mkinitcpio.conf"
+    sed -i 's/^HOOKS=(.*)$/HOOKS=(base udev autodetect microcode modconf kms keyboard keymap consolefont block encrypt lvm2 filesystems fsck)/' "$CHROOT/etc/mkinitcpio.conf"
   fi
 }
 

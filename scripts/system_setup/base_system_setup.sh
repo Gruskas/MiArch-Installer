@@ -187,6 +187,13 @@ setup_bootloader() {
     fi
 
     chroot $CHROOT grub-mkconfig -o /boot/grub/grub.cfg >$VERBOSE 2>&1
+
+    GRUBx64_PATH=$(find "$CHROOT/boot" -name grubx64.efi | head -n 1)
+    EFI_PATH=$(find "$CHROOT/boot" -type d -name "EFI")
+
+    mkdir -p "$EFI_PATH/BOOT" >"$VERBOSE" 2>&1
+    cp "$GRUBx64_PATH" "$EFI_PATH/BOOT/bootx64.efi" 2>&1
+
   else
     wprintf '[+] Setting up boot loader'
     printf "\n\n"

@@ -2,7 +2,7 @@ wprintf() {
   format="$1"
   string="$2"
 
-  printf "$WHITE%s$string" "$format"
+  printf "${WHITE}%b" "$format$string"
 }
 
 warn() {

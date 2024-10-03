@@ -1,5 +1,5 @@
 # miarch-installer version
-VERSION='0.1 Beta'
+VERSION='0.2 Beta'
 
 # path to miarch-installer
 Config_PATH='/usr/share/miarch-installer/files'

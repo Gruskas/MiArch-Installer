@@ -1,5 +1,5 @@
 # miarch-installer version
-VERSION='0.1 Beta'
+VERSION='0.2 Beta'
 
 # path to miarch-installer
 Config_PATH='/usr/share/miarch-installer/files'
@@ -85,6 +85,12 @@ BOOT_MODE=''
 
 # Copy files
 COPY=''
+
+# Ecnrypt
+LUKS=''
+
+# Ecnrypted root
+ROOT_PART_ENCRYPT=''
 
 ctrl_c() {
   sleep_clear 0
@@ -294,7 +300,7 @@ first_check() {
 }
 
 necessary_install() {
-  pacman -S --noconfirm --needed less sed curl arch-install-scripts reflector >$VERBOSE 2>&1
+  pacman -S --noconfirm --needed less sed curl arch-install-scripts reflector cryptsetup lvm2 >$VERBOSE 2>&1
 }
 
 reinitialize_keyring() {

@@ -46,6 +46,14 @@ ask_grub() {
   fi
 }
 
+ask_luks() {
+  if confirm 'Disk Setup > LUKS' '[?] Do you want encrypt [y/n]: '; then
+    LUKS=$TRUE
+  else
+    LUKS=$FALSE
+  fi
+}
+
 ask_cfdisk() {
   if confirm 'Disk Setup > Partitions' '[?] Create partitions with cfdisk (root and boot, optional swap) [y/n]: '; then
     clear
@@ -235,15 +243,22 @@ mount_filesystems() {
   printf "\n\n"
 
   # ROOT
-  if ! mount "$ROOT_PART" "$CHROOT"; then
-    error "Error mounting root filesystem, leaving."
-    exit $FAILURE
+  if [ "$LUKS" = "$TRUE" ]; then
+    if ! mount "$ROOT_PART_ENCRYPT" "$CHROOT"; then
+      error "Error mounting encrypted root filesystem, leaving."
+      exit $FAILURE
+    fi
+  else
+    if ! mount "$ROOT_PART" "$CHROOT"; then
+      error "Error mounting root filesystem, leaving."
+      exit $FAILURE
+    fi
   fi
 
   # BOOT
   mkdir -p "$CHROOT/boot" >$VERBOSE 2>&1
   if [ "$GRUB" = "$TRUE" ]; then
-    if [ "$BOOT_MODE" = 'uefi' ] && [ "$PART_LABEL" = 'gpt' ]; then
+    if [ "$BOOT_MODE" = 'uefi' ] && [ "$PART_LABEL" = 'gpt' ] && [ "$LUKS" = "$FALSE" ]; then
       mkdir -p "$CHROOT/boot/efi" >$VERBOSE 2>&1
 
       if ! mount "$BOOT_PART" "$CHROOT/boot/efi"; then

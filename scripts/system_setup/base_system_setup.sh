@@ -159,25 +159,41 @@ default_time() {
 setup_bootloader() {
   title 'Base System Setup > Boot Loader'
 
+  if [ "$LUKS" = "$TRUE" ]; then
+    packages+=" lvm2 cryptsetup"
+  fi
+
   if [ $GRUB = $TRUE ]; then
     wprintf '[+] Setting up GRUB boot loader'
     printf "\n\n"
 
-    packages="grub"
+    packages+=" grub"
 
-    if [ "$DUALBOOT" = "$TRUE" ]; then
-      packages+=" os-prober"
-    fi
-    if [ "$BOOT_MODE" = 'uefi' ]; then
-      packages+=" efibootmgr"
-    fi
+    [ "$DUALBOOT" = "$TRUE" ] && packages+=" os-prober"
+    [ "$BOOT_MODE" = 'uefi' ] && packages+=" efibootmgr"
 
     pacstrap $CHROOT $packages >$VERBOSE 2>&1
 
     sed -i 's/Arch/MiArch/g' "$CHROOT/etc/default/grub"
 
-    chroot $CHROOT grub-install "$Disk" >$VERBOSE 2>&1
+    if [ "$LUKS" = "$TRUE" ]; then
+      chroot $CHROOT grub-install --efi-directory=/boot "$Disk" >$VERBOSE 2>&1
+      uuid_crypt=$(blkid -o value -s UUID "$ROOT_PART")
+      uuid_root=$(blkid -o value -s UUID "$ROOT_PART_ENCRYPT")
+
+      sed -i "s/GRUB_CMDLINE_LINUX_DEFAULT=\"loglevel=3 quiet\"/GRUB_CMDLINE_LINUX_DEFAULT=\"loglevel=3 quiet cryptdevice=UUID=$uuid_crypt:cryptroot root=UUID=$uuid_root\"/g" "$CHROOT/etc/default/grub"
+    else
+      chroot $CHROOT grub-install "$Disk" >$VERBOSE 2>&1
+    fi
+
     chroot $CHROOT grub-mkconfig -o /boot/grub/grub.cfg >$VERBOSE 2>&1
+
+    GRUBx64_PATH=$(find "$CHROOT/boot" -name grubx64.efi | head -n 1)
+    EFI_PATH=$(find "$CHROOT/boot" -type d -name "EFI")
+
+    mkdir -p "$EFI_PATH/BOOT" >"$VERBOSE" 2>&1
+    cp "$GRUBx64_PATH" "$EFI_PATH/BOOT/bootx64.efi" 2>&1
+
   else
     wprintf '[+] Setting up boot loader'
     printf "\n\n"
@@ -185,13 +201,29 @@ setup_bootloader() {
     chroot $CHROOT bootctl install >$VERBOSE 2>&1
     uuid="$(blkid "$ROOT_PART" | cut -d ' ' -f 2 | cut -d '"' -f 2)"
 
-    cat >>"$CHROOT/boot/loader/entries/arch.conf" <<EOF
+    if [ "$LUKS" = "$TRUE" ]; then
+      pacstrap $CHROOT $packages >$VERBOSE 2>&1
+      uuid_crypt=$(blkid -o value -s UUID "$ROOT_PART")
+
+      cat >>"$CHROOT/boot/loader/entries/arch.conf" <<EOF
+title   MiArch Linux
+linux   /vmlinuz-linux
+initrd  /initramfs-linux.img
+options cryptdevice=UUID=$uuid_crypt:cryptroot root=/dev/mapper/cryptroot rw
+EOF
+    else
+      cat >>"$CHROOT/boot/loader/entries/arch.conf" <<EOF
 title   MiArch Linux
 linux   /vmlinuz-linux
 initrd    /initramfs-linux.img
 options   root=UUID=$uuid rw
 EOF
+    fi
   fi
+
+  warn 'This can take a while, please wait...'
+  printf "\n"
+  chroot $CHROOT mkinitcpio -P >$VERBOSE 2>&1
 }
 
 setup_initramfs() {
@@ -203,9 +235,9 @@ setup_initramfs() {
   cp -f "$Config_PATH/etc/mkinitcpio.conf" "$CHROOT/etc/mkinitcpio.conf"
   cp -fr "$Config_PATH/etc/mkinitcpio.d" "$CHROOT/etc/"
 
-  warn 'This can take a while, please wait...'
-  printf "\n"
-  chroot $CHROOT mkinitcpio -P linux >$VERBOSE 2>&1
+  if [ "$LUKS" = "$TRUE" ]; then
+    sed -i 's/^HOOKS=(.*)$/HOOKS=(base udev autodetect microcode modconf kms keyboard keymap consolefont block encrypt lvm2 filesystems fsck)/' "$CHROOT/etc/mkinitcpio.conf"
+  fi
 }
 
 copy_config() {

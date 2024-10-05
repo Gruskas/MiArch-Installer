@@ -47,6 +47,10 @@ setup_base_system() {
   # Set up the time
   setup_time
   sleep_clear 1
+  
+  # Update distribution information
+  update_distribution_info
+  sleep_clear 1
 
   # Set up the initial ramdisk filesystem
   setup_initramfs

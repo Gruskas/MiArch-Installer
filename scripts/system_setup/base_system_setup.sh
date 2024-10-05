@@ -240,6 +240,24 @@ setup_initramfs() {
   fi
 }
 
+update_distribution_info() {
+  title 'Base System Setup > Update distribution info'
+
+  wprintf '[+] Update Distribution Info'
+  printf "\n\n"
+
+  cat >"$CHROOT/usr/lib/os-release" <<EOF
+NAME="MiArch Linux"
+PRETTY_NAME="MiArch Linux"
+ID=miarch
+ID_LIKE=arch
+BUILD_ID=rolling
+ANSI_COLOR="0;33"
+EOF
+
+  sed -i 's/Arch Linux \\r (\\l)/MiArch Linux \\r (\\l)/' "$CHROOT/etc/issue"
+}
+
 copy_config() {
   if confirm 'Base System Setup > User files' '[?] Do you want copy default files to your directory? [y/n]: '; then
     COPY=$TRUE

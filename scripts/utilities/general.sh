@@ -83,9 +83,6 @@ NORMAL_USER=''
 # check boot mode
 BOOT_MODE=''
 
-# Copy files
-COPY=''
-
 # Ecnrypt
 LUKS=''
 

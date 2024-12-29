@@ -91,9 +91,7 @@ setup_user() {
   printf "\n\n"
 
   if [ "$user" = 'root' ]; then
-    if [ $COPY = $TRUE ]; then
-      cp -r "$Config_PATH/root/." "$CHROOT/root/" >$VERBOSE 2>&1
-    fi
+    cp -r "$Config_PATH/root/." "$CHROOT/root/" >$VERBOSE 2>&1
   else
     chroot $CHROOT groupadd "$user" >$VERBOSE 2>&1
     chroot $CHROOT useradd -g "$user" -d "/home/$user" -s "/bin/bash" \
@@ -103,9 +101,7 @@ $user ALL=(ALL) ALL
 EOF
     wprintf "[+] Added user: $user"
     printf "\n\n"
-    if [ $COPY = $TRUE ]; then
-      cp -r "$Config_PATH/user/." "$CHROOT/home/$user/" >$VERBOSE 2>&1
-    fi
+    cp -r "$Config_PATH/user/." "$CHROOT/home/$user/" >$VERBOSE 2>&1
     chroot $CHROOT chown -R "$user":"$user" "/home/$user" >$VERBOSE 2>&1
   fi
 
@@ -256,14 +252,6 @@ ANSI_COLOR="0;33"
 EOF
 
   sed -i 's/Arch Linux \\r (\\l)/MiArch Linux \\r (\\l)/' "$CHROOT/etc/issue"
-}
-
-copy_config() {
-  if confirm 'Base System Setup > User files' '[?] Do you want copy default files to your directory? [y/n]: '; then
-    COPY=$TRUE
-  else
-    COPY=$FALSE
-  fi
 }
 
 enable_pacman_multilib() {

@@ -28,10 +28,6 @@ setup_base_system() {
   setup_hostname
   sleep_clear 1
 
-  # Copy Files to root and user account
-  copy_config
-  sleep_clear 1
-
   # Set up the root user account
   setup_user "root"
   sleep_clear 1
